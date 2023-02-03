@@ -1,0 +1,16 @@
+Package: currr
+Type: Package
+Title: Apply Mapping Functions with Continues Saving
+Version: 0.1.0
+Author: Marcell Granat
+Maintainer: Marcell Granat <https://marcellgranat.com>
+Description: Implementations of the family of map() functions from 'purrr'& 'furrr' but you can set check points, where the current state of the output list will be saved.
+License: What license is it under?
+Encoding: UTF-8
+LazyData: true
+Depends: 
+    tidyverse
+Imports: 
+    furrr,
+    purrr
+RoxygenNote: 7.2.3

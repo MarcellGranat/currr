@@ -9,6 +9,10 @@ cp_map <- function(.x, .f, ..., import = NULL,  workers = NULL, fill = "default"
       str_flatten("")
   }
 
+
+
+
+
   if (!dir.exists(".currr.data")) {
     dir.create(".currr.data")
   }

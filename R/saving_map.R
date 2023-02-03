@@ -1,8 +1,10 @@
-saving_map <- function(.x, .f, ...,  workers = NULL, fill = "default", name = NULL, .board = NULL, n_checkpoint = NULL, notification = NULL) {
+saving_map <- function(.ids =  NULL, .f, ..., name = NULL, .board = NULL, n_checkpoint = NULL, notification = NULL) {
 
   if (is.null(n_checkpoint)) {
     n_checkpoint <- 100
   }
+
+  .x <- read_rds(paste0(".curr.data/", name, "/x.rds"))[.ids]
 
   n_checkpoint <- min(n_checkpoint, length(.x))
 
@@ -11,14 +13,16 @@ saving_map <- function(.x, .f, ...,  workers = NULL, fill = "default", name = NU
   out <- list()
 
   for (i in seq(n_checkpoint)) {
-    tictoc::tic()
+    saveRDS(Sys.time(), file = "st_.rds")
 
     out <- map(.x = .x, .f = f, ...)
 
-    runtime <- tictoc::toc() |>
-      capture.output() |>
-      stringr::str_remove(" sec elapsed") |>
-      as.numeric()
+    saveRDS(Sys.time(), file = "et_.rds")
+
+    saveRDS(out)
+
+    update_status()
+
   }
 
 }

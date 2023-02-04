@@ -1,16 +1,39 @@
 Package: currr
-Type: Package
-Title: Apply Mapping Functions with Continues Saving
-Version: 0.1.0
-Author: Marcell Granat
-Maintainer: Marcell Granat <https://marcellgranat.com>
-Description: Implementations of the family of map() functions from 'purrr'& 'furrr' but you can set check points, where the current state of the output list will be saved.
-License: What license is it under?
+Title: Apply Mapping Functions in Continues Saving
+Version: 0.1
+Authors@R: c(
+    person("Marcell", "Granat", , "granat.marcell@uni-neumann.hu", role = c("aut", "cre"))
+  )
+Description: Implementations of the family of map() functions from 'purrr' & 'furrr' with continues saving.
+License: MIT
+URL: https://github.com/MarcellGranat/currr
+BugReports: https://github.com/MarcellGranat/currr/issues
+Depends:
+    future (>= 1.25.0),
+    stringr,
+    readr,
+    purrr,
+    R (>= 3.4.0)
+Imports:
+    globals (>= 0.14.0),
+    lifecycle (>= 1.0.1),
+    purrr (>= 0.3.4),
+    rlang (>= 1.0.2),
+    vctrs (>= 0.4.1)
+Suggests:
+    carrier,
+    covr,
+    dplyr (>= 0.7.4),
+    knitr,
+    listenv (>= 0.6.0),
+    magrittr,
+    rmarkdown,
+    testthat (>= 3.0.0),
+    tidyselect,
+    withr
+Config/Needs/website:
+    progressr
+Config/testthat/edition: 3
 Encoding: UTF-8
-LazyData: true
-Depends: 
-    tidyverse
-Imports: 
-    furrr,
-    purrr
+Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3

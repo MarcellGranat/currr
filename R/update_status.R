@@ -19,6 +19,7 @@ update_status <- function(name, done = 50, n = 230, chr_length = 80, eta = "120 
   cache <- read_rds(paste0(".currr.data/", name, "/meta.rds"))$cache
   cache_rate <- round(cache / n * chr_length)
   done_rate <- round(done / n * chr_length)
+  done_rate <- min(done_rate, chr_length - cache_rate)
   remain_rate <- chr_length - (cache_rate + done_rate)
 
   flush.console()

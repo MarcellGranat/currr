@@ -12,20 +12,16 @@ eta <- function(name) {
   exec_time <- map2_dbl(start_time, finish_time, ~ as.numeric(.y - .x))
 
   exec_inds <- finished |>
-    str_extract_all("_\\d{1,}") |>
-    map(str_remove, "_") |>
-    map(as.numeric)
+    map(~ read_rds(paste0(".currr.data/", name, "/", str_replace(., "et", "id"))))
 
   n <- read_rds(paste0(".currr.data/", name, "/meta.rds"))$n
 
-  lin_estimation <- mean(exec_time) / str_count(finished[1], "_") * # avg time
+  lin_estimation <- mean(exec_time/ map_dbl(exec_inds, length))  * # avg time
     (n - length(reduce(exec_inds, c))) # inds left
 
   if (length(exec_time) < 5) {
     poly_estimation <- 0
   } else {
-
-
 
   poly_n <- min(length(exec_time), 3)
 
@@ -35,7 +31,7 @@ eta <- function(name) {
       poly_3 = i ^ 3
     )
 
-  poly_estimation <- map2(exec_inds, exec_time / str_count(finished, "_"), tidyr::crossing) |>
+  poly_estimation <- map2(exec_inds, exec_time / map_dbl(exec_inds, length), tidyr::crossing) |>
     map_dfr(purrr::set_names, "i", "time") |>
     left_join(estim_inds[, seq(poly_n)], by = "i") |>
     lm(formula = time ~ .) |>

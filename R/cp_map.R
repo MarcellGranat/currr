@@ -2,16 +2,20 @@
 #'
 #' @export
 
-cp_map <- function(.x, .f, ..., name = NULL, import = NULL, wait = 1, workers = NULL, fill_method = "default", .board = NULL, n_checkpoint = 100, notification = NULL) {
+cp_map <- function(.x, .f, ..., name = NULL, cp_options = list()) {
 
   if (is.null(name)) {
-    message(".id is suggested")
+    auto_generated_name <- TRUE
 
     name <- str_c(deparse(substitute(.f)), deparse(substitute(.x))) |>
       str_remove_all("\\W") |>
       str_to_lower() |>
       str_flatten("")
+  } else {
+    auto_generated_name <- FALSE
   }
+
+  read_options(cp_options)
 
   if (!dir.exists(".currr.data")) {
     dir.create(".currr.data")
@@ -40,6 +44,10 @@ cp_map <- function(.x, .f, ..., name = NULL, import = NULL, wait = 1, workers = 
 
       message(crayon::red(clisymbols::symbol$cross), " The function is not identical to the one you used previously. ", crayon::red("I restart the process.\r"), "\n")
 
+      tryCatch({ # remove previous job
+        rstudioapi::jobRemove(.currr.jobId[[name]])
+      }, error = \(e) {})
+
       list.files(name_dir, full.names = TRUE) |>
         walk(unlink, recursive = TRUE)
 
@@ -56,6 +64,10 @@ cp_map <- function(.x, .f, ..., name = NULL, import = NULL, wait = 1, workers = 
       if (!identical(.x, old_x)) { # save the ones that matches and save
         flush.console()
         message(crayon::blue(clisymbols::symbol$warning), " .x has changed. ", crayon::red("Looking for mathcing result to save them as cache\r"))
+
+        tryCatch({ # remove previous job
+          rstudioapi::jobRemove(.currr.jobId[[name]])
+        }, error = \(e) {})
 
         matching_x_df <- dplyr::inner_join(
           tibble(x = old_x) |>
@@ -98,12 +110,12 @@ cp_map <- function(.x, .f, ..., name = NULL, import = NULL, wait = 1, workers = 
         ids <- setdiff(ids, matching_x_df$new_x_id)
         flush.console()
         message(crayon::cyan(clisymbols::symbol$circle_dotted), " Cache updated based on the new .x values\r")
-        message("")
         saveRDS(.x, paste0(name_dir, "/x.rds")) # update x
 
         list.files(name_dir, full.names = TRUE) |> # remove everything else
           setdiff(c(old_x_file_name, old_x_id_name, paste0(name_dir, "/x.rds"), paste0(name_dir, "/f.rds"))) |>
           walk(unlink, recursive = TRUE)
+
       } else {
         flush.console()
         message(crayon::green("\u2713"), " Everything is unchanged. Reading cache.\r")
@@ -116,18 +128,16 @@ cp_map <- function(.x, .f, ..., name = NULL, import = NULL, wait = 1, workers = 
           (\(x) str_c(name_dir, "/", x)) () |>
           map(read_rds)
 
-        list.files(name_dir) |>
-          keep(str_starts, "st|et") |>
-          (\(x) str_c(name_dir, "/", x)) () |>
-          walk(unlink, recursive = TRUE)
-
         ids <- setdiff(ids, reduce(old_x_ids, c))
-        cache <- length(reduce(old_x_ids, c))
+        cache <- sum(map_dbl(old_x_ids, length))
 
       }
     }
 
-  } else { # first run...
+  } else { # first run...,
+    if (auto_generated_name) {
+      message(crayon::blue(clisymbols::symbol$warning), " Using name is suggested. Currently named to ", crayon::cyan(name), ".")
+    }
     saveRDS(.x, paste0(name_dir, "/x.rds"))
     saveRDS(.f, paste0(name_dir, "/f.rds"))
     cache <- 0
@@ -147,10 +157,8 @@ cp_map <- function(.x, .f, ..., name = NULL, import = NULL, wait = 1, workers = 
 
     if (wait == Inf) {
 
-
-
       if (workers == 1) {
-        saving_map(.ids = ids, .f = .f, name = name, ... = ...)
+        saving_map(.ids = ids, .f = .f, name = name, n_checkpoint = n_checkpoint, ... = ...)
       }
 
       if (workers > 1) {
@@ -158,13 +166,13 @@ cp_map <- function(.x, .f, ..., name = NULL, import = NULL, wait = 1, workers = 
         id_groups <- seq_along(ids) %% workers
         id_list <- map(unique(id_groups), ~ ids[which(id_groups == .)])
         loaded_packages <- pacman::p_loaded()
-        cl <- makeCluster(workers)
+        cl <- makeCluster(min(workers, detectCores()))
         clusterExport(cl, varlist = c("loaded_packages", "id_list", ".f", "..."), envir = environment())
         clusterExport(cl, varlist = ls(envir = environment()), envir = environment())
         clusterEvalQ(cl, library(tidyverse))
         clusterEvalQ(cl, lapply(loaded_packages, library, character.only = TRUE))
         parLapply(X = id_list, cl = cl, function(x) {
-          saving_map(.ids = x, .f = .f, name = name, ... = ...)
+          saving_map(.ids = x, .f = .f, name = name, n_checkpoint = ceiling(n_checkpoint / workers), ... = ...)
         })
         stopCluster(cl)
       }
@@ -175,17 +183,16 @@ cp_map <- function(.x, .f, ..., name = NULL, import = NULL, wait = 1, workers = 
 
       job_running <- FALSE
       tryCatch({
-        rstudioapi::jobAddOutput(.currr.jobId$name, "This job is still, running.")
+        rstudioapi::jobAddOutput(.currr.jobId[[name]], str_c("This job is still, running. ", crayon::cyan(format(Sys.time(), "%H:%M:%S")), "\n"))
         job_running <- TRUE
-        message(crayon::red(clisymbols::symbol$warning), " This evaluation is still running in a bg job.\r")
-      }, error = \(e) message("Start a new job."))
-      cat(job_running)
-      if (!job_running) {
+        message(crayon::cyan(clisymbols::symbol$info), " This evaluation is still running in a bg job.\r")
+      }, error = \(e) {})
 
+      if (!job_running) {
 
         job_id <- job::job({
           if (workers == 1) {
-            saving_map(.ids = ids, .f = .f, name = name, ... = ...)
+            saving_map(.ids = ids, .f = .f, name = name, n_checkpoint = n_checkpoint, ... = ...)
           }
 
           if (workers > 1) {
@@ -193,13 +200,13 @@ cp_map <- function(.x, .f, ..., name = NULL, import = NULL, wait = 1, workers = 
             id_groups <- seq_along(ids) %% workers
             id_list <- map(unique(id_groups), ~ ids[which(id_groups == .)])
             loaded_packages <- pacman::p_loaded()
-            cl <- makeCluster(workers)
+            cl <- makeCluster(min(workers, detectCores()))
             clusterExport(cl, varlist = c("loaded_packages", "id_list", ".f", "..."), envir = environment())
             clusterExport(cl, varlist = ls(envir = environment()), envir = environment())
             clusterEvalQ(cl, library(tidyverse))
             clusterEvalQ(cl, lapply(loaded_packages, library, character.only = TRUE))
             parLapply(X = id_list, cl = cl, function(x) {
-              saving_map(.ids = x, .f = .f, name = name, ... = ...)
+              saving_map(.ids = x, .f = .f, name = name, n_checkpoint = ceiling(n_checkpoint / workers),... = ...)
             })
             stopCluster(cl)
           }
@@ -207,48 +214,80 @@ cp_map <- function(.x, .f, ..., name = NULL, import = NULL, wait = 1, workers = 
         }, title = str_c("Currr: ", name))
 
         if (!exists(".currr.jobId")) {
-          .currr.jobId <- list()
+          .currr.jobId <<- list()
         }
-        .currr.jobId[[length(.currr.jobId) + 1]] <- name
-        names(.currr.jobId)[length(.currr.jobId)] <- name
+        if (name %in% names(.currr.jobId)) {
+          .currr.jobId[[name]] <<- job_id
+        } else {
+          .currr.jobId[[length(.currr.jobId) + 1]] <<- job_id
+          names(.currr.jobId)[length(.currr.jobId)] <<- name
+        }
       }
 
-      Sys.sleep(5)
     }
   }
 
   # Read back
+  Sys.sleep(.01)
+  still_wait <- wait != 0
 
-  still_wait <- TRUE
+  if (wait < 0) {
+    stop("Wait must be a positive integer OR positive numeric between 0 an 1.")
+  }
+
   while (still_wait) {
 
     output_file_names <- list.files(name_dir) |>
       keep(str_starts, "out_")
 
-    out_ids <- output_file_names |>
-      str_replace("out", "id") |>
-      (\(x) str_c(name_dir, "/", x)) () |>
-      map(read_rds)
+    if (length(output_file_names) > 0) {
 
-    if (length(reduce(out_ids, c)) == length(.x)) {
-      still_wait <- FALSE
-    }
+      out_ids <- output_file_names |>
+        str_replace("out", "id") |>
+        (\(x) str_c(name_dir, "/", x)) () |>
+        map(read_rds)
 
-    if (wait > 0 & wait < 1) {
-    if (length(reduce(out_ids, c)) /  length(.x) >= wait) {
-      still_wait <- FALSE
-    } else {
-      if (length(reduce(out_ids, c)) > wait) {
+      if (length(reduce(out_ids, c)) == length(.x)) {
+        still_wait <- FALSE
+      }
+
+      if (wait > 0 & wait < 1) {
+        if (length(reduce(out_ids, c)) /  length(.x) >= wait) {
+          still_wait <- FALSE
+        } else {
+          if (length(reduce(out_ids, c)) > wait) {
+            still_wait <- FALSE
+          }
+        }
+      } else if (length(reduce(out_ids, c)) >= wait) {
         still_wait <- FALSE
       }
     }
-    }
 
-    if (still_wait) {
-      eta(name) |>
-        (\(x) update_status(name = name, done = x$done, n = x$n, eta = x$eta)) ()
+    if (still_wait & length(output_file_names) > 0) {
+
+      if (!exists("message_dots")) {
+        message_dots <- 0
+      }
+      message_dots <- message_dots + 1
+
+      tryCatch({
+        eta(name) |>
+          (\(x) update_status(name = name, done = x$done, n = x$n, eta = x$eta)) ()
+      }, error = \(e) {
+        flush.console()
+        cat(str_flatten(c("Calculating ETA", rep(".", (message_dots -1) %% 3 + 1), rep(" ", 2 - (message_dots -1) %% 3),  " \r"), collapse = ""))
+        flush.console()
+      })
+      Sys.sleep(.5)
     }
   }
+
+  tryCatch({ # close the job if finished
+    if (length(reduce(out_ids, c)) == length(.x)) {
+      rstudioapi::jobRemove(.currr.jobId[[name]])
+    }
+  }, error = \(e) {})
 
   return(
     tibble(id = out_ids, out = map(output_file_names, ~ read_rds(str_c(name_dir, "/", .)))) |>
@@ -257,6 +296,13 @@ cp_map <- function(.x, .f, ..., name = NULL, import = NULL, wait = 1, workers = 
         x = tibble(id = seq_along(.x)),
         by = "id"
       ) |>
+      (\(.data) {
+        if (fill) {
+          return(.data)
+        } else {
+          return(filter(.data, id %in% reduce(out_ids, c)))
+        }
+      }) () |>
       pull(out)
   )
 }

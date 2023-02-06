@@ -2,7 +2,7 @@
 #'
 #' @export
 
-remove_currr_cache <- function(list = NULL, .board) {
+remove_currr_cache <- function(list = NULL) {
   if (is.null(list)) {
     unlink(".currr.data", recursive = TRUE)
   } else {

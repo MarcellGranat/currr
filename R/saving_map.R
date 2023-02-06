@@ -16,15 +16,17 @@ saving_map <- function(.ids, .f, name, n_checkpoint = 100, ...) {
 
     saveRDS(Sys.time(), file = paste0(".currr.data/", name, "/st_", first(current_eval_ids), ".rds"))
 
-    out <- map(.x = x[current_eval_ids], .f, ...)
+    out <- map(.x = x[seq(from = c(0, q)[i] + 1, to = q[i])], .f, ...)
 
     saveRDS(Sys.time(), file = paste0(".currr.data/", name, "/et_", first(current_eval_ids), ".rds"))
 
     saveRDS(out, file = paste0(".currr.data/", name, "/out_", first(current_eval_ids), ".rds"))
     saveRDS(current_eval_ids, file = paste0(".currr.data/", name, "/id_", first(current_eval_ids), ".rds"))
 
-    eta(name) |>
-      (\(x) update_status(name = name, done = x$done, n = x$n, eta = x$eta)) ()
+    if (!rstudioapi::isJob()) {
+      eta(name) |>
+        (\(x) update_status(name = name, done = x$done, n = x$n, eta = x$eta)) ()
+    }
   }
 
 }

@@ -18,7 +18,7 @@
 update_status <- function(name, done = 50, n = 230, chr_length = 80, eta = "120 sec") {
   cache <- read_rds(paste0(".currr.data/", name, "/meta.rds"))$cache
   cache_rate <- round(cache / n * chr_length)
-  done_rate <- round(done / n * chr_length)
+  done_rate <- round((done - cache) / n * chr_length)
   done_rate <- min(done_rate, chr_length - cache_rate)
   remain_rate <- chr_length - (cache_rate + done_rate)
 
@@ -27,7 +27,9 @@ update_status <- function(name, done = 50, n = 230, chr_length = 80, eta = "120 
       crayon::cyan(paste0(rep("█", max(cache_rate, 0)), collapse = "")),
       crayon::green(paste0(rep("█", max(done_rate, 0)), collapse = "")),
       crayon::white(paste0(rep("█", max(remain_rate, 0)), collapse = "")),
-      crayon::magenta("| ETA: ", eta), sep = "")
+      crayon::magenta(" | "),
+      crayon::green(scales::percent((done_rate + cache_rate) / chr_length)),
+      crayon::magenta(" ETA: ", eta), sep = "")
   cat(" \r")
   flush.console()
 }

@@ -4,15 +4,7 @@
 \alias{saving_map}
 \title{Run a map with the function, but saves after a given number of execution.}
 \usage{
-saving_map(
-  .ids = NULL,
-  .f,
-  ...,
-  name = NULL,
-  .board = NULL,
-  n_checkpoint = NULL,
-  notification = NULL
-)
+saving_map(.ids, .f, name, n_checkpoint = 100, ...)
 }
 \description{
 Run a map with the function, but saves after a given number of execution.

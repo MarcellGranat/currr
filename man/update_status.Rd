@@ -4,18 +4,18 @@
 \alias{update_status}
 \title{Update the status of the progress bar.}
 \usage{
-update_status(done = 50, cache = 0, n = 230, chr_length = 80, eta = "120 sec")
+update_status(name, done = 50, n = 230, chr_length = 80, eta = "120 sec")
 }
 \arguments{
 \item{done}{A number.}
-
-\item{cache}{A number.}
 
 \item{n}{A number.}
 
 \item{chr_length}{A number.}
 
 \item{eta}{A string}
+
+\item{cache}{A number.}
 }
 \description{
 Update the status of the progress bar.

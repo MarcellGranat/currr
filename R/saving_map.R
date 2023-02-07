@@ -1,27 +1,32 @@
-#' Run a map with the function, but saves after a given number of execution.
+#' Run a map with the function, but saves after a given number of execution. This is an internal function, you are not supposed to use it manually, but can call for background job inly if exported.
 #'
+#' @param .ids Placement of .x to work with.
+#' @param .f Called function.
+#' @param name Name for saving.
+#' @param n_checkpoint Number of checkpoints.
+#' @param ... Additionals.
 #' @export
 
 saving_map <- function(.ids, .f, name, n_checkpoint = 100, ...) {
 
-  x <- read_rds(paste0(".currr.data/", name, "/x.rds"))[.ids]
+  x <- readr::read_rds(paste0(".currr.data/", name, "/x.rds"))[.ids]
 
   n_checkpoint <- min(n_checkpoint, length(x))
 
-  q <- as.numeric(floor(quantile(seq_along(x), probs = 1:n_checkpoint / n_checkpoint)))
+  q <- as.numeric(floor(stats::quantile(seq_along(x), probs = 1:n_checkpoint / n_checkpoint)))
 
   for (i in seq(n_checkpoint)) {
 
     current_eval_ids <- .ids[seq(from = c(0, q)[i] + 1, to = q[i])]
 
-    saveRDS(Sys.time(), file = paste0(".currr.data/", name, "/st_", first(current_eval_ids), ".rds"))
+    saveRDS(Sys.time(), file = paste0(".currr.data/", name, "/st_", current_eval_ids[1], ".rds"))
 
-    out <- map(.x = x[seq(from = c(0, q)[i] + 1, to = q[i])], .f, ...)
+    out <- purrr::map(.x = x[seq(from = c(0, q)[i] + 1, to = q[i])], .f, ...)
 
-    saveRDS(Sys.time(), file = paste0(".currr.data/", name, "/et_", first(current_eval_ids), ".rds"))
+    saveRDS(Sys.time(), file = paste0(".currr.data/", name, "/et_", current_eval_ids[1], ".rds"))
 
-    saveRDS(out, file = paste0(".currr.data/", name, "/out_", first(current_eval_ids), ".rds"))
-    saveRDS(current_eval_ids, file = paste0(".currr.data/", name, "/id_", first(current_eval_ids), ".rds"))
+    saveRDS(out, file = paste0(".currr.data/", name, "/out_", current_eval_ids[1], ".rds"))
+    saveRDS(current_eval_ids, file = paste0(".currr.data/", name, "/id_", current_eval_ids[1], ".rds"))
 
     if (!rstudioapi::isJob()) {
       eta(name) |>

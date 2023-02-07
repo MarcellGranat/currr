@@ -1,39 +1,31 @@
 Package: currr
-Title: Apply Mapping Functions in Continues Saving
-Version: 0.1
-Authors@R: c(
-    person("Marcell", "Granat", , "granat.marcell@uni-neumann.hu", role = c("aut", "cre"))
-  )
-Description: Implementations of the family of map() functions from 'purrr' & 'furrr' with continues saving.
-License: MIT
+Title: Apply Mapping Functions in Frequent Saving
+Version: 0.1.0
+Authors@R: 
+    person("Marcell", "Granat", , "granat.marcell@uni-neumann.hu", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-4036-1500"))
+Description: Implementations of the family of map() functions with frequent saving of the intermediate results. The contained functions let you start the evaluation of the iterations where you stopped  (reading the already evaluated ones from cache), and work with the currently evaluated iterations while remaining ones are running in a background job. Parallel computing is also easier with the workers parameter.
+License: MIT + file LICENSE
 URL: https://github.com/MarcellGranat/currr
 BugReports: https://github.com/MarcellGranat/currr/issues
 Depends:
-    future (>= 1.25.0),
-    stringr,
-    readr,
-    purrr,
-    R (>= 3.4.0)
+    R (>= 4.1.0)
 Imports:
-    globals (>= 0.14.0),
-    lifecycle (>= 1.0.1),
-    purrr (>= 0.3.4),
-    rlang (>= 1.0.2),
-    vctrs (>= 0.4.1)
-Suggests:
-    carrier,
-    covr,
-    dplyr (>= 0.7.4),
-    knitr,
-    listenv (>= 0.6.0),
-    magrittr,
-    rmarkdown,
-    testthat (>= 3.0.0),
-    tidyselect,
-    withr
-Config/Needs/website:
-    progressr
-Config/testthat/edition: 3
+    dplyr,
+    tidyr,
+    readr,
+    stringr,
+    broom,
+    pacman,
+    tibble,
+    clisymbols,
+    job,
+    rstudioapi,
+    scales,
+    parallel,
+    purrr,
+    crayon,
+    stats
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3

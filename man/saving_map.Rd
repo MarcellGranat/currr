@@ -2,10 +2,21 @@
 % Please edit documentation in R/saving_map.R
 \name{saving_map}
 \alias{saving_map}
-\title{Run a map with the function, but saves after a given number of execution.}
+\title{Run a map with the function, but saves after a given number of execution. This is an internal function, you are not supposed to use it manually, but can call for background job inly if exported.}
 \usage{
 saving_map(.ids, .f, name, n_checkpoint = 100, ...)
 }
+\arguments{
+\item{.ids}{Placement of .x to work with.}
+
+\item{.f}{Called function.}
+
+\item{name}{Name for saving.}
+
+\item{n_checkpoint}{Number of checkpoints.}
+
+\item{...}{Additionals.}
+}
 \description{
-Run a map with the function, but saves after a given number of execution.
+Run a map with the function, but saves after a given number of execution. This is an internal function, you are not supposed to use it manually, but can call for background job inly if exported.
 }

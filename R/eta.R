@@ -1,23 +1,24 @@
-#' Calculate ETA
+#' Calculate the ETA. Result is the input to `update_status`.
+#' @keywords internal
+#' @noRd
 #'
-#' @export
 
 eta <- function(name) {
 
   finished <- list.files(paste0(".currr.data/", name)) |>
-    keep(str_starts, "et_")
+    purrr::keep(stringr::str_starts, "et_")
 
-  start_time <- map(finished, ~ read_rds(paste0(".currr.data/", name, "/", (str_replace(., "et", "st")))))
-  finish_time <- map(finished, ~ read_rds(paste0(".currr.data/", name, "/", .)))
-  exec_time <- map2_dbl(start_time, finish_time, ~ as.numeric(.y - .x))
+  start_time <- purrr::map(finished, ~ readr::read_rds(paste0(".currr.data/", name, "/", (stringr::str_replace(., "et", "st")))))
+  finish_time <- purrr::map(finished, ~ readr::read_rds(paste0(".currr.data/", name, "/", .)))
+  exec_time <- purrr::map2_dbl(start_time, finish_time, ~ as.numeric(.y - .x))
 
   exec_inds <- finished |>
-    map(~ read_rds(paste0(".currr.data/", name, "/", str_replace(., "et", "id"))))
+    purrr::map(~ readr::read_rds(paste0(".currr.data/", name, "/", stringr::str_replace(., "et", "id"))))
 
-  n <- read_rds(paste0(".currr.data/", name, "/meta.rds"))$n
+  n <- readr::read_rds(paste0(".currr.data/", name, "/meta.rds"))$n
 
-  lin_estimation <- mean(exec_time/ map_dbl(exec_inds, length))  * # avg time
-    (n - length(reduce(exec_inds, c))) # inds left
+  lin_estimation <- mean(exec_time/ purrr::map_dbl(exec_inds, length))  * # avg time
+    (n - length(purrr::reduce(exec_inds, c))) # inds left
 
   if (length(exec_time) < 5) {
     poly_estimation <- 0
@@ -25,20 +26,20 @@ eta <- function(name) {
 
   poly_n <- min(length(exec_time), 3)
 
-  estim_inds <- tibble(i = seq(n)) |>
-    mutate(
+  estim_inds <- tibble::tibble(i = seq(n)) |>
+    dplyr::mutate(
       poly_2 = i ^ 2,
       poly_3 = i ^ 3
     )
 
-  poly_estimation <- map2(exec_inds, exec_time / map_dbl(exec_inds, length), tidyr::crossing) |>
-    map_dfr(purrr::set_names, "i", "time") |>
-    left_join(estim_inds[, seq(poly_n)], by = "i") |>
-    lm(formula = time ~ .) |>
-    step(direction = "backward", steps = 3, trace = FALSE, k = 4) |>
+  poly_estimation <- purrr::map2(exec_inds, exec_time / purrr::map_dbl(exec_inds, length), tidyr::crossing) |>
+    purrr::map_dfr(purrr::set_names, "i", "time") |>
+    dplyr::left_join(estim_inds[, seq(poly_n)], by = "i") |>
+    stats::lm(formula = time ~ .) |>
+    stats::step(direction = "backward", steps = 3, trace = FALSE, k = 4) |>
     broom::augment(newdata = estim_inds) |>
-    slice(- reduce(exec_inds, c)) |>
-    pull(.fitted) |>
+    dplyr::slice(- purrr::reduce(exec_inds, c)) |>
+    dplyr::pull(.fitted) |>
     sum()
   }
 
@@ -48,10 +49,10 @@ eta <- function(name) {
     eta <- format_eta(lin_estimation)
   }
 
-  eta <- str_c(eta, str_flatten(rep(" ", 30 - str_length(eta)), ""))
+  eta <- stringr::str_c(eta, stringr::str_flatten(rep(" ", 30 - stringr::str_length(eta)), ""))
 
   list(
-    done = length(reduce(exec_inds, c)),
+    done = length(purrr::reduce(exec_inds, c)),
     n = n,
     eta = eta
   )

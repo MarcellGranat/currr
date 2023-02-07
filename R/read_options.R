@@ -1,3 +1,8 @@
+#' Get the options from options and cp_options input. Called in cp_map
+#' @keywords internal
+#' @noRd
+#'
+
 read_options <- function(x) {
   if (is.null(getOption("currr.workers"))) {
     workers <- 1 # default
@@ -23,13 +28,19 @@ read_options <- function(x) {
   if ("fill" %in% names(x)) {
     fill <- x$fill
   }
-  if (is.null("currr.n_checkpoint")) {
+  if (is.null(getOption("currr.n_checkpoint"))) {
     n_checkpoint <- 100
   } else {
     n_checkpoint <- getOption("currr.n_checkpoint")
   }
   if ("n_checkpoint" %in% names(x)) {
     n_checkpoint <- x$n_checkpoint
+  }
+
+  if (is.null(getOption("currr.unchanged_message"))) {
+    unchanged_message <- TRUE
+  } else {
+    unchanged_message <- getOption("currr.unchanged_message")
   }
 
   if (!workers %in% 1:100) stop("`workers` must be a positive integer, defining the number of core to use for parrallel computing.")
@@ -39,6 +50,7 @@ read_options <- function(x) {
 
   assign(x = "workers", workers, envir = parent.frame())
   assign(x = "wait", wait, envir = parent.frame())
-  assign(x = "fill", workers, envir = parent.frame())
+  assign(x = "fill", fill, envir = parent.frame())
   assign(x = "n_checkpoint", n_checkpoint, envir = parent.frame())
+  assign(x = "unchanged_message", unchanged_message, envir = parent.frame())
 }

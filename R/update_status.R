@@ -15,7 +15,14 @@
 #'
 #' @export
 
-update_status <- function(name, done = 50, n = 230, chr_length = 80, eta = "120 sec") {
+update_status <- function(name, done, n, eta) {
+
+  if (is.null(getOption("currr.progress_length"))) {
+    chr_length <- 50 # default
+  } else {
+    chr_length <- getOption("currr.progress_length")
+  }
+
   cache <- read_rds(paste0(".currr.data/", name, "/meta.rds"))$cache
   cache_rate <- round(cache / n * chr_length)
   done_rate <- round((done - cache) / n * chr_length)

@@ -247,19 +247,21 @@ cp_map <- function(.x, .f, ..., name = NULL, cp_options = list()) {
         (\(x) str_c(name_dir, "/", x)) () |>
         map(read_rds)
 
-      if (length(reduce(out_ids, c)) == length(.x)) {
+      finished_n <- length(reduce(out_ids, c))
+
+      if (finished_n == length(.x)) {
         still_wait <- FALSE
       }
 
       if (wait > 0 & wait < 1) {
-        if (length(reduce(out_ids, c)) /  length(.x) >= wait) {
+        if ((finished_n /  length(.x)) >= wait) {
           still_wait <- FALSE
         } else {
-          if (length(reduce(out_ids, c)) > wait) {
+          if (finished_n > wait) {
             still_wait <- FALSE
           }
         }
-      } else if (length(reduce(out_ids, c)) >= wait) {
+      } else if (finished_n >= wait) {
         still_wait <- FALSE
       }
     }

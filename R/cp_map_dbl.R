@@ -48,6 +48,7 @@
 #' * `fill()` When you get back a not fully evaluated result (default `TRUE`). Should the length of the result be the same as .x?
 #'
 #' You can set these options also with `options(currr.n_checkpoint = 200)`. Additional options: `currr.unchanged_message` (TRUE/FALSE), `currr.progress_length`
+#' @return A numeric vector.
 #' @export
 #' @family map variants
 #' @examples

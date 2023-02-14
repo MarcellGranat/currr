@@ -5,17 +5,23 @@
 
 eta <- function(name) {
 
-  finished <- list.files(paste0(".currr.data/", name)) |>
+  if (is.null(getOption("currr.folder"))) {
+    currr_folder <- tempdir(check = TRUE)
+  } else {
+    currr_folder <- getOption("currr.folder")
+  }
+
+  finished <- list.files(paste0(currr_folder, "/", name)) |>
     purrr::keep(stringr::str_starts, "et_")
 
-  start_time <- purrr::map(finished, ~ readr::read_rds(paste0(".currr.data/", name, "/", (stringr::str_replace(., "et", "st")))))
-  finish_time <- purrr::map(finished, ~ readr::read_rds(paste0(".currr.data/", name, "/", .)))
+  start_time <- purrr::map(finished, ~ readr::read_rds(paste0(currr_folder, "/", name, "/", (stringr::str_replace(., "et", "st")))))
+  finish_time <- purrr::map(finished, ~ readr::read_rds(paste0(currr_folder, "/", name, "/", .)))
   exec_time <- purrr::map2_dbl(start_time, finish_time, ~ as.numeric(.y - .x))
 
   exec_inds <- finished |>
-    purrr::map(~ readr::read_rds(paste0(".currr.data/", name, "/", stringr::str_replace(., "et", "id"))))
+    purrr::map(~ readr::read_rds(paste0(currr_folder, "/", name, "/", stringr::str_replace(., "et", "id"))))
 
-  n <- readr::read_rds(paste0(".currr.data/", name, "/meta.rds"))$n
+  n <- readr::read_rds(paste0(currr_folder, "/", name, "/meta.rds"))$n
 
   lin_estimation <- mean(exec_time/ purrr::map_dbl(exec_inds, length))  * # avg time
     (n - length(purrr::reduce(exec_inds, c))) # inds left

@@ -43,14 +43,31 @@ read_options <- function(x) {
     unchanged_message <- getOption("currr.unchanged_message")
   }
 
+ if (is.null(getOption("currr.folder"))) {
+    currr_folder <- tempdir(check = TRUE)
+  } else {
+    currr_folder <- getOption("currr.folder")
+  }
+
   if (!workers %in% 1:100) stop("`workers` must be a positive integer, defining the number of core to use for parrallel computing.")
   if (!(wait > 0)) stop("`wait` must be a positive integer or numberic between 0 & 1.")
   if (!fill %in% c(FALSE, TRUE)) stop("`fill` must be TRUE or FALSE.")
   if (!(n_checkpoint > 0 & n_checkpoint %% 1 == 0)) stop("`n_checkpoint` must be a positive interger.")
+
+  if (wait != Inf & is.null(getOption("currr.folder"))) {
+    warning("Wait can differ from Inf only if currr.folder is not temporary (default)")
+    wait <- Inf
+  }
+
+  if (wait != Inf & rstudioapi::isJob()) {
+    warning("Wait can differ from Inf if the code is running in RStudio.")
+    wait <- Inf
+  }
 
   assign(x = "workers", workers, envir = parent.frame())
   assign(x = "wait", wait, envir = parent.frame())
   assign(x = "fill", fill, envir = parent.frame())
   assign(x = "n_checkpoint", n_checkpoint, envir = parent.frame())
   assign(x = "unchanged_message", unchanged_message, envir = parent.frame())
+  assign(x = "currr_folder", currr_folder, envir = parent.frame())
 }

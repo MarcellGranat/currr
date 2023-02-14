@@ -40,6 +40,9 @@ If its value is not equal to \code{Inf} then evaluation is goind in background j
 
 You can set these options also with \code{options(currr.n_checkpoint = 200)}. Additional options: \code{currr.unchanged_message} (TRUE/FALSE), \code{currr.progress_length}}
 }
+\value{
+A numeric vector.
+}
 \description{
 The map functions transform their input by applying a function to
 each element of a list or atomic vector and returning an object of

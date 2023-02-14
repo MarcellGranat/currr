@@ -9,6 +9,9 @@ remove_currr_cache(list = NULL)
 \arguments{
 \item{list}{A character vector specifying the name of the caches you want to remove (files in .currr.data folder). If empy (default), all caches will be removed.}
 }
+\value{
+No return value, called for side effects
+}
 \description{
 Remove currr's intermediate data from the folder.
 }

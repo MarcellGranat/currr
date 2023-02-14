@@ -4,7 +4,7 @@
 \alias{saving_map}
 \title{Run a map with the function, but saves after a given number of execution. This is an internal function, you are not supposed to use it manually, but can call for background job inly if exported.}
 \usage{
-saving_map(.ids, .f, name, n_checkpoint = 100, ...)
+saving_map(.ids, .f, name, n_checkpoint = 100, currr_folder, ...)
 }
 \arguments{
 \item{.ids}{Placement of .x to work with.}
@@ -15,7 +15,12 @@ saving_map(.ids, .f, name, n_checkpoint = 100, ...)
 
 \item{n_checkpoint}{Number of checkpoints.}
 
+\item{currr_folder}{Folder where cache files are stored.}
+
 \item{...}{Additionals.}
+}
+\value{
+No return value, called for side effects
 }
 \description{
 Run a map with the function, but saves after a given number of execution. This is an internal function, you are not supposed to use it manually, but can call for background job inly if exported.

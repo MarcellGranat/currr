@@ -5,13 +5,19 @@
 
 update_status <- function(name, done, n, eta) {
 
+  if (is.null(getOption("currr.folder"))) {
+    currr_folder <- tempdir(check = TRUE)
+  } else {
+    currr_folder <- getOption("currr.folder")
+  }
+
   if (is.null(getOption("currr.progress_length"))) {
     chr_length <- 50 # default
   } else {
     chr_length <- getOption("currr.progress_length")
   }
 
-  cache <- readr::read_rds(paste0(".currr.data/", name, "/meta.rds"))$cache
+  cache <- readr::read_rds(paste0(currr_folder, "/", name, "/meta.rds"))$cache
   cache_rate <- round(cache / n * chr_length)
   done_rate <- round((done - cache) / n * chr_length)
   done_rate <- min(done_rate, chr_length - cache_rate)

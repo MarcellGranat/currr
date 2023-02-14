@@ -4,12 +4,14 @@
 #' @param .f Called function.
 #' @param name Name for saving.
 #' @param n_checkpoint Number of checkpoints.
+#' @param currr_folder Folder where cache files are stored.
 #' @param ... Additionals.
+#' @return No return value, called for side effects
 #' @export
 
-saving_map <- function(.ids, .f, name, n_checkpoint = 100, ...) {
+saving_map <- function(.ids, .f, name, n_checkpoint = 100, currr_folder, ...) {
 
-  x <- readr::read_rds(paste0(".currr.data/", name, "/x.rds"))[.ids]
+  x <- readr::read_rds(paste0(currr_folder, "/", name, "/x.rds"))[.ids]
 
   n_checkpoint <- min(n_checkpoint, length(x))
 
@@ -19,14 +21,14 @@ saving_map <- function(.ids, .f, name, n_checkpoint = 100, ...) {
 
     current_eval_ids <- .ids[seq(from = c(0, q)[i] + 1, to = q[i])]
 
-    saveRDS(Sys.time(), file = paste0(".currr.data/", name, "/st_", current_eval_ids[1], ".rds"))
+    saveRDS(Sys.time(), file = paste0(currr_folder, "/", name, "/st_", current_eval_ids[1], ".rds"))
 
     out <- purrr::map(.x = x[seq(from = c(0, q)[i] + 1, to = q[i])], .f, ...)
 
-    saveRDS(Sys.time(), file = paste0(".currr.data/", name, "/et_", current_eval_ids[1], ".rds"))
+    saveRDS(Sys.time(), file = paste0(currr_folder, "/", name, "/et_", current_eval_ids[1], ".rds"))
 
-    saveRDS(out, file = paste0(".currr.data/", name, "/out_", current_eval_ids[1], ".rds"))
-    saveRDS(current_eval_ids, file = paste0(".currr.data/", name, "/id_", current_eval_ids[1], ".rds"))
+    saveRDS(out, file = paste0(currr_folder, "/", name, "/out_", current_eval_ids[1], ".rds"))
+    saveRDS(current_eval_ids, file = paste0(currr_folder, "/", name, "/id_", current_eval_ids[1], ".rds"))
 
     if (!rstudioapi::isJob()) {
       eta(name) |>

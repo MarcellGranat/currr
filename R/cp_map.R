@@ -33,7 +33,6 @@
 #' (if a subset of .x matches with the cached one and the function is the same,
 #' then elements of this subset won't evaluated, rather read from the cache)
 #'
-#'
 #' @param cp_options Options for the evaluation: `wait`, `n_checkpoint`, `workers`, `fill`.
 #'
 #' * `wait`: An integer to specify that after how many iterations the console shows the intermediate results (default `1`).
@@ -48,6 +47,7 @@
 #' * `fill()` When you get back a not fully evaluated result (default `TRUE`). Should the length of the result be the same as .x?
 #'
 #' You can set these options also with `options(currr.n_checkpoint = 200)`. Additional options: `currr.unchanged_message` (TRUE/FALSE), `currr.progress_length`
+#' @return A list.
 #' @export
 #' @family map variants
 #' @examples
@@ -82,7 +82,7 @@ cp_map <- function(.x, .f, ..., name = NULL, cp_options = list()) {
 
 
 
-    if (!name %in% list.files(".currr.data")) {
+    if (!name %in% list.files(currr_folder)) {
       message(crayon::blue(clisymbols::symbol$warning), " Using name is suggested. Currently named to ", crayon::cyan(name), ".")
     }
   }
@@ -94,17 +94,17 @@ cp_map <- function(.x, .f, ..., name = NULL, cp_options = list()) {
     wait <- Inf
   }
 
-  if (!dir.exists(".currr.data")) {
-    dir.create(".currr.data")
+  if (!dir.exists(currr_folder)) {
+    dir.create(currr_folder)
   }
 
-  name_dir <- paste0(".currr.data/", name)
+  name_dir <- paste0(currr_folder, "/", name)
   if (!dir.exists(name_dir)) {
     dir.create(name_dir)
   }
 
-  if (!any(stringr::str_starts(list.files(paste0(".currr.data/", name)), "out_"))) {
-    list.files(paste0(".currr.data/", name), full.names = TRUE) |>
+  if (!any(stringr::str_starts(list.files(paste0(currr_folder, "/", name)), "out_"))) {
+    list.files(paste0(currr_folder, "/", name), full.names = TRUE) |>
       purrr::walk(unlink, recursive = TRUE) # remove all files if no result in it
   }
 
@@ -127,7 +127,17 @@ cp_map <- function(.x, .f, ..., name = NULL, cp_options = list()) {
       message(crayon::red(clisymbols::symbol$cross), " The function is not identical to the one you used previously. ", crayon::red("I restart the process.\r"), "\n")
 
       tryCatch({ # remove previous job
-        rstudioapi::jobRemove(.currr.jobId[[name]])
+        job_id_exists <- list.files(currr_folder) |>
+          (\(x) x == "currr_job_ids.rds") () |>
+          any()
+
+        if (!job_id_exists) {
+          saveRDS(list(), file = paste0(currr_folder, "/currr_job_ids.rds"))
+        }
+
+        job_ids <- readRDS(paste0(currr_folder, "/currr_job_ids.rds"))
+
+        rstudioapi::jobRemove(job_ids[[name]])
       }, error = \(e) {})
 
       list.files(name_dir, full.names = TRUE) |>
@@ -148,7 +158,17 @@ cp_map <- function(.x, .f, ..., name = NULL, cp_options = list()) {
         message(crayon::blue(clisymbols::symbol$warning), " .x has changed. ", crayon::red("Looking for mathcing result to save them as cache\r"))
 
         tryCatch({ # remove previous job
-          rstudioapi::jobRemove(.currr.jobId[[name]])
+          job_id_exists <- list.files(currr_folder) |>
+            (\(x) x == "currr_job_ids.rds") () |>
+            any()
+
+          if (!job_id_exists) {
+            saveRDS(list(), file = paste0(currr_folder, "/currr_job_ids.rds"))
+          }
+
+          job_ids <- readRDS(paste0(currr_folder, "/currr_job_ids.rds"))
+
+          rstudioapi::jobRemove(job_ids[[name]])
         }, error = \(e) {})
 
         matching_x_df <- dplyr::inner_join(
@@ -232,14 +252,10 @@ cp_map <- function(.x, .f, ..., name = NULL, cp_options = list()) {
 
   if (cache < length(.x)) {
 
-    if (!workers %in% 1:100) {
-      stop("workers must be an integer!")
-    }
-
     if (wait == Inf) {
 
       if (workers == 1) {
-        currr::saving_map(.ids = ids, .f = .f, name = name, n_checkpoint = n_checkpoint, ... = ...)
+        currr::saving_map(.ids = ids, .f = .f, name = name, n_checkpoint = n_checkpoint, currr_folder = currr_folder, ... = ...)
       }
 
       if (workers > 1) {
@@ -252,7 +268,7 @@ cp_map <- function(.x, .f, ..., name = NULL, cp_options = list()) {
         parallel::clusterEvalQ(cl, library(tidyverse))
         parallel::clusterEvalQ(cl, lapply(loaded_packages, library, character.only = TRUE))
         parallel::parLapply(X = id_list, cl = cl, function(x) {
-          currr::saving_map(.ids = x, .f = .f, name = name, n_checkpoint = ceiling(n_checkpoint / workers), ... = ...)
+          currr::saving_map(.ids = x, .f = .f, name = name, n_checkpoint = ceiling(n_checkpoint / workers), currr_folder = currr_folder, ... = ...)
         })
         parallel::stopCluster(cl)
       }
@@ -262,8 +278,19 @@ cp_map <- function(.x, .f, ..., name = NULL, cp_options = list()) {
       # Job running? ------------------------------------------------
 
       job_running <- FALSE
+
+      job_id_exists <- list.files(currr_folder) |>
+        (\(x) x == "currr_job_ids.rds") () |>
+        any()
+
+      if (!job_id_exists) {
+        saveRDS(list(), file = paste0(currr_folder, "/currr_job_ids.rds"))
+      }
+
+      job_ids <- readRDS(paste0(currr_folder, "/currr_job_ids.rds"))
+
       tryCatch({
-        rstudioapi::jobAddOutput(.currr.jobId[[name]], stringr::str_c("This job is still, running. ", crayon::cyan(format(Sys.time(), "%H:%M:%S")), "\n"))
+        rstudioapi::jobAddOutput(job_ids[[name]], stringr::str_c("This job is still, running. ", crayon::cyan(format(Sys.time(), "%H:%M:%S")), "\n"))
         job_running <- TRUE
         message(crayon::cyan(clisymbols::symbol$info), " This evaluation is still running in a bg job.\r")
       }, error = \(e) {})
@@ -272,7 +299,7 @@ cp_map <- function(.x, .f, ..., name = NULL, cp_options = list()) {
 
         job_id <- job::job({
           if (workers == 1) {
-            currr::saving_map(.ids = ids, .f = .f, name = name, n_checkpoint = n_checkpoint, ... = ...)
+            currr::saving_map(.ids = ids, .f = .f, name = name, n_checkpoint = n_checkpoint, currr_folder = currr_folder, ... = ...)
           }
 
           if (workers > 1) {
@@ -285,25 +312,30 @@ cp_map <- function(.x, .f, ..., name = NULL, cp_options = list()) {
             parallel::clusterEvalQ(cl, library(tidyverse))
             parallel::clusterEvalQ(cl, lapply(loaded_packages, library, character.only = TRUE))
             parallel::parLapply(X = id_list, cl = cl, function(x) {
-              currr::saving_map(.ids = x, .f = .f, name = name, n_checkpoint = ceiling(n_checkpoint / workers), ... = ...)
+              currr::saving_map(.ids = x, .f = .f, name = name, n_checkpoint = ceiling(n_checkpoint / workers), currr_folder = currr_folder, ... = ...)
             })
             parallel::stopCluster(cl)
           }
 
         }, title = stringr::str_c("Currr: ", name))
 
-        if (!exists(".currr.jobId")) {
-          .currr.jobId <<- list()
-        }
-        if (name %in% names(.currr.jobId)) {
-          .currr.jobId[[name]] <<- job_id
+        if (name %in% names(job_ids)) {
+          job_ids[[name]] <- job_id
+          saveRDS(job_ids, file = paste0(currr_folder, "/currr_job_ids.rds"))
+
         } else {
-          .currr.jobId[[length(.currr.jobId) + 1]] <<- job_id
-          names(.currr.jobId)[length(.currr.jobId)] <<- name
+          job_ids[[length(job_ids) + 1]] <- job_id
+          names(job_ids)[length(job_ids)] <- name
+          saveRDS(job_ids, file = paste0(currr_folder, "/currr_job_ids.rds"))
         }
       }
 
     }
+  } else {
+    tryCatch({
+      job_ids <- readRDS(paste0(currr_folder, "/currr_job_ids.rds"))
+      rstudioapi::jobRemove(job_ids[[name]])
+    }, error = \(e) {})
   }
 
   # Read back
@@ -335,10 +367,6 @@ cp_map <- function(.x, .f, ..., name = NULL, cp_options = list()) {
       if (wait > 0 & wait < 1) {
         if ((finished_n /  length(.x)) >= wait) {
           still_wait <- FALSE
-        } else {
-          if (finished_n > wait) {
-            still_wait <- FALSE
-          }
         }
       } else if (finished_n >= wait) {
         still_wait <- FALSE
@@ -365,8 +393,8 @@ cp_map <- function(.x, .f, ..., name = NULL, cp_options = list()) {
   }
 
   tryCatch({ # close the job if finished
-    if (length(purrr::reduce(out_ids, c)) == length(.x)) {
-      rstudioapi::jobRemove(.currr.jobId[[name]])
+    if (length(purrr::reduce(out_ids, c)) >= length(.x)) {
+      rstudioapi::jobRemove(job_ids[[name]])
     }
   }, error = \(e) {})
 

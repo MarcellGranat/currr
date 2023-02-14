@@ -1,6 +1,6 @@
 Package: currr
 Title: Apply Mapping Functions in Frequent Saving
-Version: 0.1.0
+Version: 0.1.1
 Authors@R: 
     person("Marcell", "Granat", , "granat.marcell@uni-neumann.hu", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-4036-1500"))

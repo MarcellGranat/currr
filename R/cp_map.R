@@ -80,8 +80,6 @@ cp_map <- function(.x, .f, ..., name = NULL, cp_options = list()) {
       stringr::str_to_lower() |>
       stringr::str_flatten("")
 
-
-
     if (!name %in% list.files(currr_folder)) {
       message(crayon::blue(clisymbols::symbol$warning), " Using name is suggested. Currently named to ", crayon::cyan(name), ".")
     }
@@ -288,12 +286,13 @@ cp_map <- function(.x, .f, ..., name = NULL, cp_options = list()) {
       }
 
       job_ids <- readRDS(paste0(currr_folder, "/currr_job_ids.rds"))
-
-      tryCatch({
-        rstudioapi::jobAddOutput(job_ids[[name]], stringr::str_c("This job is still, running. ", crayon::cyan(format(Sys.time(), "%H:%M:%S")), "\n"))
-        job_running <- TRUE
-        message(crayon::cyan(clisymbols::symbol$info), " This evaluation is still running in a bg job.\r")
-      }, error = \(e) {})
+      suppressWarnings({
+        tryCatch({
+          rstudioapi::jobAddOutput(job_ids[[name]], stringr::str_c("This job is still, running. ", crayon::cyan(format(Sys.time(), "%H:%M:%S")), "\n"))
+          job_running <- TRUE
+          message(crayon::cyan(clisymbols::symbol$info), " This evaluation is still running in a bg job.\r")
+        }, error = \(e) {})
+      })
 
       if (!job_running) {
 
@@ -332,10 +331,12 @@ cp_map <- function(.x, .f, ..., name = NULL, cp_options = list()) {
 
     }
   } else {
-    tryCatch({
-      job_ids <- readRDS(paste0(currr_folder, "/currr_job_ids.rds"))
-      rstudioapi::jobRemove(job_ids[[name]])
-    }, error = \(e) {})
+    suppressWarnings({
+      tryCatch({
+        job_ids <- readRDS(paste0(currr_folder, "/currr_job_ids.rds"))
+        rstudioapi::jobRemove(job_ids[[name]])
+      }, error = \(e) {})
+    })
   }
 
   # Read back
@@ -379,14 +380,15 @@ cp_map <- function(.x, .f, ..., name = NULL, cp_options = list()) {
         message_dots <- 0
       }
       message_dots <- message_dots + 1
-
-      tryCatch({
-        eta(name) |>
-          (\(x) update_status(name = name, done = x$done, n = x$n, eta = x$eta)) ()
-      }, error = \(e) {
-        utils::flush.console()
-        cat(stringr::str_flatten(c("Calculating ETA", rep(".", (message_dots -1) %% 3 + 1), rep(" ", 2 - (message_dots -1) %% 3),  " \r"), collapse = ""))
-        utils::flush.console()
+      suppressWarnings({
+        tryCatch({
+          eta(name) |>
+            (\(x) update_status(name = name, done = x$done, n = x$n, eta = x$eta)) ()
+        }, error = \(e) {
+          utils::flush.console()
+          cat(stringr::str_flatten(c("Calculating ETA", rep(".", (message_dots -1) %% 3 + 1), rep(" ", 2 - (message_dots -1) %% 3),  " \r"), collapse = ""))
+          utils::flush.console()
+        })
       })
       Sys.sleep(.5)
     }

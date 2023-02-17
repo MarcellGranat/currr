@@ -13,7 +13,7 @@ read_options <- function(x) {
     workers <- x$workers
   }
   if (is.null(getOption("currr.wait"))) {
-    wait <- 1
+    wait <- Inf
   } else {
     wait <- getOption("currr.wait")
   }

@@ -63,15 +63,17 @@
 #' }
 #'
 #'
-#' cp_map(.x = 1:10, .f = avg_n, .data = iris, .col = Sepal.Length, name = "iris_mean")
+#' cp_map(.x = 1:10, .f = avg_n, .data = iris, .col = 2, name = "iris_mean")
 #'
 #'  # same function, read from cache
-#' cp_map(.x = 1:10, .f = avg_n, .data = iris, .col = Sepal.Length, name = "iris_mean")
+#' cp_map(.x = 1:10, .f = avg_n, .data = iris, .col = 2, name = "iris_mean")
 #'
 #' remove_currr_cache()
 #'
 
 cp_map <- function(.x, .f, ..., name = NULL, cp_options = list()) {
+
+  read_options(cp_options)
 
   if (is.null(name)) {
 
@@ -85,7 +87,12 @@ cp_map <- function(.x, .f, ..., name = NULL, cp_options = list()) {
     }
   }
 
-  read_options(cp_options)
+  dotdot <- TRUE # >
+
+  tryCatch({
+    dotdot <- length(list(...)) != 0 # gives an error if data is masked
+    # it is not empty if masked > leave it as TRUE
+  }, error = \(e) {})
 
   if (wait != Inf & .Platform$GUI != "RStudio") {
     message(crayon::blue(clisymbols::symbol$info), " Intermediate result return available only at Rstudio console.")
@@ -252,23 +259,55 @@ cp_map <- function(.x, .f, ..., name = NULL, cp_options = list()) {
 
     if (wait == Inf) {
 
-      if (workers == 1) {
-        currr::saving_map(.ids = ids, .f = .f, name = name, n_checkpoint = n_checkpoint, currr_folder = currr_folder, ... = ...)
-      }
+      if (dotdot) {
 
-      if (workers > 1) {
-        id_groups <- seq_along(ids) %% workers
-        id_list <- purrr::map(unique(id_groups), ~ ids[which(id_groups == .)])
-        loaded_packages <- pacman::p_loaded()
-        cl <- parallel::makeCluster(min(workers, parallel::detectCores()))
-        parallel::clusterExport(cl, varlist = c("loaded_packages", "id_list", ".f", "..."), envir = environment())
-        parallel::clusterExport(cl, varlist = ls(envir = environment()), envir = environment())
-        parallel::clusterEvalQ(cl, library(tidyverse))
-        parallel::clusterEvalQ(cl, lapply(loaded_packages, library, character.only = TRUE))
-        parallel::parLapply(X = id_list, cl = cl, function(x) {
-          currr::saving_map(.ids = x, .f = .f, name = name, n_checkpoint = ceiling(n_checkpoint / workers), currr_folder = currr_folder, ... = ...)
-        })
-        parallel::stopCluster(cl)
+        if (workers == 1) {
+          currr::saving_map(.ids = ids, .f = .f, name = name, n_checkpoint = n_checkpoint, currr_folder = currr_folder, ... = ...)
+        }
+        if (workers > 1) {
+          id_groups <- seq_along(ids) %% workers
+          id_list <- purrr::map(unique(id_groups), ~ ids[which(id_groups == .)])
+          loaded_packages <- pacman::p_loaded()
+          cl <- parallel::makeCluster(min(workers, parallel::detectCores()))
+          parallel::clusterExport(cl, varlist = c("loaded_packages", "id_list", ".f", "..."), envir = environment())
+          parallel::clusterExport(cl, varlist = ls(envir = environment()), envir = environment())
+          parallel::clusterEvalQ(cl, library(tidyverse))
+          parallel::clusterEvalQ(cl, lapply(loaded_packages, library, character.only = TRUE))
+          parallel::parLapply(X = id_list, cl = cl, function(x) {
+            currr::saving_map(.ids = x, .f = .f, name = name, n_checkpoint = ceiling(n_checkpoint / workers), currr_folder = currr_folder, ... = ...)
+          })
+          parallel::stopCluster(cl)
+        }
+      } else {
+        if (workers == 1) {
+          currr::saving_map_nodot(.ids = ids, .f = .f, name = name, n_checkpoint = n_checkpoint, currr_folder = currr_folder)
+        }
+
+        if (workers > 1) {
+          for (env_up in 1:10) {
+            e <- parent.frame(n = env_up)
+            obj_names <- ls(envir = e)
+            for (on in obj_names) {
+              assign(on, value = get(on, envir = e), envir = environment())
+            }
+
+            if (identical(e, globalenv())) {
+              break
+            }
+          }
+          id_groups <- seq_along(ids) %% workers
+          id_list <- purrr::map(unique(id_groups), ~ ids[which(id_groups == .)])
+          loaded_packages <- pacman::p_loaded()
+          cl <- parallel::makeCluster(min(workers, parallel::detectCores()))
+          parallel::clusterExport(cl, varlist = c("loaded_packages", "id_list", ".f"), envir = environment())
+          parallel::clusterExport(cl, varlist = ls(envir = environment()), envir = environment())
+          parallel::clusterEvalQ(cl, library(tidyverse))
+          parallel::clusterEvalQ(cl, lapply(loaded_packages, library, character.only = TRUE))
+          parallel::parLapply(X = id_list, cl = cl, function(x) {
+            currr::saving_map_nodot(.ids = x, .f = .f, name = name, n_checkpoint = ceiling(n_checkpoint / workers), currr_folder = currr_folder)
+          })
+          parallel::stopCluster(cl)
+        }
       }
 
     } else {
@@ -296,27 +335,64 @@ cp_map <- function(.x, .f, ..., name = NULL, cp_options = list()) {
 
       if (!job_running) {
 
-        job_id <- job::job({
-          if (workers == 1) {
-            currr::saving_map(.ids = ids, .f = .f, name = name, n_checkpoint = n_checkpoint, currr_folder = currr_folder, ... = ...)
-          }
+        if (dotdot) {
 
-          if (workers > 1) {
+          job_id <- job::job({
+            if (workers == 1) {
+              currr::saving_map(.ids = ids, .f = .f, name = name, n_checkpoint = n_checkpoint, currr_folder = currr_folder, ... = ...)
+            }
+
+            if (workers > 1) {
+              id_groups <- seq_along(ids) %% workers
+              id_list <- purrr::map(unique(id_groups), ~ ids[which(id_groups == .)])
+              loaded_packages <- pacman::p_loaded()
+              cl <- parallel::makeCluster(min(workers, parallel::detectCores()))
+              parallel::clusterExport(cl, varlist = c("loaded_packages", "id_list", ".f", "..."), envir = environment())
+              parallel::clusterExport(cl, varlist = ls(envir = environment()), envir = environment())
+              parallel::clusterEvalQ(cl, library(tidyverse))
+              parallel::clusterEvalQ(cl, lapply(loaded_packages, library, character.only = TRUE))
+              parallel::parLapply(X = id_list, cl = cl, function(x) {
+                currr::saving_map(.ids = x, .f = .f, name = name, n_checkpoint = ceiling(n_checkpoint / workers), currr_folder = currr_folder, ... = ...)
+              })
+              parallel::stopCluster(cl)
+            }
+
+          }, title = stringr::str_c("Currr: ", name))
+        } else {
+          job_tf <- tempfile(fileext = ".RData")
+          for (env_up in 1:10) {
+            e <- parent.frame(n = env_up)
+            obj_names <- ls(envir = e)
+            for (on in obj_names) {
+              assign(on, value = get(on, envir = e), envir = environment())
+            }
+
+            if (identical(e, globalenv())) {
+              break
+            }
+          }
+          save.image(file = job_tf)
+
+          job_id <- job::job({
+            load(job_tf)
+
             id_groups <- seq_along(ids) %% workers
             id_list <- purrr::map(unique(id_groups), ~ ids[which(id_groups == .)])
             loaded_packages <- pacman::p_loaded()
             cl <- parallel::makeCluster(min(workers, parallel::detectCores()))
-            parallel::clusterExport(cl, varlist = c("loaded_packages", "id_list", ".f", "..."), envir = environment())
+            parallel::clusterExport(cl, varlist = c("loaded_packages", "id_list", ".f"), envir = environment())
             parallel::clusterExport(cl, varlist = ls(envir = environment()), envir = environment())
-            parallel::clusterEvalQ(cl, library(tidyverse))
-            parallel::clusterEvalQ(cl, lapply(loaded_packages, library, character.only = TRUE))
+            parallel::clusterEvalQ(cl, suppressPackageStartupMessages(lapply(loaded_packages, library, character.only = TRUE)))
             parallel::parLapply(X = id_list, cl = cl, function(x) {
-              currr::saving_map(.ids = x, .f = .f, name = name, n_checkpoint = ceiling(n_checkpoint / workers), currr_folder = currr_folder, ... = ...)
+              currr::saving_map_nodot(.ids = x, .f = .f, name = name, n_checkpoint = ceiling(n_checkpoint / workers), currr_folder = currr_folder)
             })
             parallel::stopCluster(cl)
-          }
 
-        }, title = stringr::str_c("Currr: ", name))
+            rm(cl, loaded_packages, job_tf, id_groups, id_list)
+          }, title = stringr::str_c("Currr: ", name), import = "auto")
+
+        }
+
 
         if (name %in% names(job_ids)) {
           job_ids[[name]] <- job_id

@@ -71,10 +71,10 @@ avg_n <- function(.data, .col, x) {
 }
 
 
-cp_map(.x = 1:10, .f = avg_n, .data = iris, .col = Sepal.Length, name = "iris_mean")
+cp_map(.x = 1:10, .f = avg_n, .data = iris, .col = 2, name = "iris_mean")
 
  # same function, read from cache
-cp_map(.x = 1:10, .f = avg_n, .data = iris, .col = Sepal.Length, name = "iris_mean")
+cp_map(.x = 1:10, .f = avg_n, .data = iris, .col = 2, name = "iris_mean")
 
 remove_currr_cache()
 

@@ -24,13 +24,13 @@ update_status <- function(name, done, n, eta) {
   remain_rate <- chr_length - (cache_rate + done_rate)
 
   utils::flush.console()
-  cat(crayon::magenta("|"),
-      crayon::cyan(paste0(rep("\u2588", max(cache_rate, 0)), collapse = "")),
-      crayon::green(paste0(rep("\u2588", max(done_rate, 0)), collapse = "")),
-      crayon::white(paste0(rep("\u2588", max(remain_rate, 0)), collapse = "")),
-      crayon::magenta(" | "),
-      crayon::green(scales::percent((done_rate + cache_rate) / chr_length)),
-      crayon::magenta(" ETA: ", eta), sep = "")
+  cat(cli::col_magenta("|"),
+      cli::col_cyan(paste0(rep("\u2588", max(cache_rate, 0)), collapse = "")),
+      cli::col_green(paste0(rep("\u2588", max(done_rate, 0)), collapse = "")),
+      cli::col_white(paste0(rep("\u2588", max(remain_rate, 0)), collapse = "")),
+      cli::col_magenta(" | "),
+      cli::col_green(scales::percent((done_rate + cache_rate) / chr_length)),
+      cli::col_magenta(" ETA: ", eta), sep = "")
   cat(" \r")
   utils::flush.console()
 }

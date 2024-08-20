@@ -11,6 +11,7 @@ BugReports: https://github.com/MarcellGranat/currr/issues
 Depends:
     R (>= 4.1.0)
 Imports:
+    cli,
     dplyr,
     tidyr,
     readr,
@@ -18,13 +19,11 @@ Imports:
     broom,
     pacman,
     tibble,
-    clisymbols,
     job,
     rstudioapi,
     scales,
     parallel,
     purrr,
-    crayon,
     stats
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

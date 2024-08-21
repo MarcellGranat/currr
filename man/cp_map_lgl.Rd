@@ -81,10 +81,10 @@ remove_currr_cache()
 }
 \seealso{
 Other map variants: 
+\code{\link{cp_map}()},
 \code{\link{cp_map_chr}()},
 \code{\link{cp_map_dbl}()},
 \code{\link{cp_map_dfc}()},
-\code{\link{cp_map_dfr}()},
-\code{\link{cp_map}()}
+\code{\link{cp_map_dfr}()}
 }
 \concept{map variants}

@@ -83,7 +83,9 @@ cp_map <- function(.x, .f, ..., name = NULL, cp_options = list()) {
       stringr::str_flatten("")
 
     if (!name %in% list.files(currr_folder)) {
-      message(crayon::blue(clisymbols::symbol$warning), " Using name is suggested. Currently named to ", crayon::cyan(name), ".")
+      cli::cli_inform(c(
+        "{cli::col_blue(cli::symbol$warning)}  Using name is suggested. Currently named to {cli::col_cyan(name)}."
+      ))
     }
   }
 
@@ -94,8 +96,10 @@ cp_map <- function(.x, .f, ..., name = NULL, cp_options = list()) {
     # it is not empty if masked > leave it as TRUE
   }, error = \(e) {})
 
-  if (wait != Inf & .Platform$GUI != "RStudio") {
-    message(crayon::blue(clisymbols::symbol$info), " Intermediate result return available only at Rstudio console.")
+  if (!is.infinite(wait) && .Platform$GUI != "RStudio") {
+    cli::cli_inform(c(
+      "i" = " Intermediate result return available only at Rstudio console."
+    ))
     wait <- Inf
   }
 
@@ -128,8 +132,10 @@ cp_map <- function(.x, .f, ..., name = NULL, cp_options = list()) {
     }, error = \(e) FALSE)
 
     if (!equal_f) {
-
-      message(crayon::red(clisymbols::symbol$cross), " The function is not identical to the one you used previously. ", crayon::red("I restart the process.\r"), "\n")
+      
+      cli::cli_inform(c(
+        "x" = "The function is not identical to the one you used previously. {cli::col_red('I restart the process.')}"
+      ))
 
       tryCatch({ # remove previous job
         job_id_exists <- list.files(currr_folder) |>
@@ -160,7 +166,9 @@ cp_map <- function(.x, .f, ..., name = NULL, cp_options = list()) {
 
       if (!identical(.x, old_x)) { # save the ones that matches and save
         utils::flush.console()
-        message(crayon::blue(clisymbols::symbol$warning), " .x has changed. ", crayon::red("Looking for mathcing result to save them as cache\r"))
+        cli::cli_inform(c(
+          "{cli::col_blue(cli::symbol$warning)} .x has changed. {cli::col_red('Looking for mathcing result to save them as cache.')}"
+        ))
 
         tryCatch({ # remove previous job
           job_id_exists <- list.files(currr_folder) |>
@@ -216,7 +224,9 @@ cp_map <- function(.x, .f, ..., name = NULL, cp_options = list()) {
 
         ids <- setdiff(ids, matching_x_df$new_x_id)
         utils::flush.console()
-        message(crayon::cyan(clisymbols::symbol$circle_dotted), " Cache updated based on the new .x values\r")
+        cli::cli_inform(c(
+          "{cli::col_cyan(cli::symbol$circle_dotted)} Cached updated based on the new .x values."
+        ))
         saveRDS(.x, paste0(name_dir, "/x.rds")) # update x
 
         list.files(name_dir, full.names = TRUE) |> # remove everything else
@@ -226,7 +236,9 @@ cp_map <- function(.x, .f, ..., name = NULL, cp_options = list()) {
       } else {
         if (unchanged_message) {
           utils::flush.console()
-          message(crayon::green("\u2713"), " Everything is unchanged. Reading cache.\r")
+          cli::cli_inform(c(
+            "v" = "Everything is unchanged. Reading cache."
+          ))
         }
 
         x_file_names <- list.files(name_dir) |>
@@ -327,9 +339,11 @@ cp_map <- function(.x, .f, ..., name = NULL, cp_options = list()) {
       job_ids <- readRDS(paste0(currr_folder, "/currr_job_ids.rds"))
       suppressWarnings({
         tryCatch({
-          rstudioapi::jobAddOutput(job_ids[[name]], stringr::str_c("This job is still, running. ", crayon::cyan(format(Sys.time(), "%H:%M:%S")), "\n"))
+          rstudioapi::jobAddOutput(job_ids[[name]], cli::format_inline("This job is still, running. {cli::col_cyan(format(Sys.time(), '%H:%M:%S'))}"))
           job_running <- TRUE
-          message(crayon::cyan(clisymbols::symbol$info), " This evaluation is still running in a bg job.\r")
+          cli::cli_inform(c(
+            "i" = " This evaluation is still running in a bg job."
+          ))
         }, error = \(e) {})
       })
 

@@ -82,7 +82,9 @@ cp_map_dfr <- function(.x, .f, ..., name = NULL, cp_options = list()) {
       stringr::str_flatten("")
 
     if (!name %in% list.files(".currr.data")) {
-      message(crayon::blue(clisymbols::symbol$warning), " Using name is suggested. Currently named to ", crayon::cyan(name), ".")
+      cli::cli_inform(c(
+        "{cli::col_blue(cli::symbol$warning)}  Using name is suggested. Currently named to {cli::col_cyan(name)}."
+      ))
     }
   }
 
